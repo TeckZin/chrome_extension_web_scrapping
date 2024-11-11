@@ -2,10 +2,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/gorilla/websocket"
 )
+
+var count int
 
 var upgrader = websocket.Upgrader{
 	// Allow all origins for development
@@ -31,9 +37,55 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		log.Printf("Received data: %s", message)
+		count++
+		log.Printf("Received data: %s, count: %d", message, count)
+		rgParts := strings.Split(string(message), ":")
+		go addNewLine(rgParts[0], "g")
+		go addNewLine(rgParts[1], "r")
 		// Process the received CSV data here
 	}
+}
+
+func addNewLine(message string, fileType string) {
+	var filePath string
+
+	// Get the current working directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
+	// Construct the correct file path based on file type
+	switch fileType {
+	case "r":
+		filePath = filepath.Join(currentDir, "internal", "file", "r.txt")
+	case "g":
+		filePath = filepath.Join(currentDir, "internal", "file", "g.txt")
+	default:
+		return
+	}
+
+	// Ensure directory exists
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		fmt.Println("dir don't exists")
+		return
+	}
+
+	// Open file with proper permissions
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println("cant open")
+		return
+	}
+	defer file.Close()
+
+	// Write message with newline
+	if _, err := file.WriteString(message + "\n"); err != nil {
+		fmt.Println("cant write")
+		return
+	}
+
 }
 
 func main() {

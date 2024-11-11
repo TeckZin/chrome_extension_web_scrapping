@@ -60,7 +60,7 @@ const submitInfo = async (rows) => {
     console.log(rows[4].toString());
     console.log(rows[5].toString());
     // Create the content you want to write
-    const newLine = `${rows[4]},${rows[5]}\n`;  // Example: formatting as CSV
+    const newLine = `${rows[4]}:${rows[5]}`;  // Example: formatting as CSV
     sendWSMessage(newLine);
 };
 
